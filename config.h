@@ -68,7 +68,7 @@ static const char *cmdsoundtoggle[] = { "amixer", "-q", "sset", "Master", "toggl
 static const char *cmdsoundup[] = { "amixer", "-q", "sset", "Master", "5%+", NULL };
 static const char *cmdsounddown[] = { "amixer", "-q", "sset", "Master", "5%-", NULL };
 
-
+#include "exitdwm.c"
 static const Key keys[] = {
 	/* modifier                     key        function        argument */
 	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
@@ -106,7 +106,7 @@ static const Key keys[] = {
 	TAGKEYS(                        XK_7,                      6)
 	TAGKEYS(                        XK_8,                      7)
 	TAGKEYS(                        XK_9,                      8)
-	{ MODKEY|ShiftMask,             XK_q,      quit,           {0} },
+	{ MODKEY|ShiftMask,             XK_q,      exitdwm,           {0} },
 };
 
 /* button definitions */
