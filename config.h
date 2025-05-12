@@ -64,9 +64,10 @@ static const int dmenudesktop = 1; /* 1 means dmenu will use only desktop files 
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
 static const char *termcmd[]  = { "st", NULL };
+static const char *cmdsoundnotify[] = {"sh", "-c", "notify-send -t 800 -u low \"Volume\" -h int:value:$(amixer sget Master | tail -1 | awk '{print $4}' | tr -d '[%]')", NULL};
 static const char *cmdsoundtoggle[] = { "amixer", "-q", "sset", "Master", "toggle", NULL };
-static const char *cmdsoundup[] = { "amixer", "-q", "sset", "Master", "5%+", NULL };
-static const char *cmdsounddown[] = { "amixer", "-q", "sset", "Master", "5%-", NULL };
+static const char *cmdsoundup[] = { "amixer", "-q", "sset", "Master", "5%+", NULL};
+static const char *cmdsounddown[] = { "amixer", "-q", "sset", "Master", "5%-", NULL};
 
 #include "exitdwm.c"
 static const Key keys[] = {
@@ -96,7 +97,9 @@ static const Key keys[] = {
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
 	{ 0,				            XF86AudioMute,spawn,		{.v = cmdsoundtoggle} },
 	{ 0,				            XF86AudioRaiseVolume,spawn,	{.v = cmdsoundup} },
+	{ 0,				            XF86AudioRaiseVolume,spawn,	{.v = cmdsoundnotify} },
 	{ 0,				            XF86AudioLowerVolume,spawn,	{.v = cmdsounddown} },
+	{ 0,				            XF86AudioLowerVolume,spawn,	{.v = cmdsoundnotify} },
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
