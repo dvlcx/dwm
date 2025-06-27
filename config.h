@@ -68,6 +68,71 @@ static const char *cmdsoundnotify[] = {"sh", "-c", "dunstify -t 800 -u low \"Vol
 static const char *cmdsoundtoggle[] = { "amixer", "-q", "sset", "Master", "toggle", NULL };
 static const char *cmdsoundup[] = { "amixer", "-q", "sset", "Master", "5%+", NULL};
 static const char *cmdsounddown[] = { "amixer", "-q", "sset", "Master", "5%-", NULL};
+static unsigned int last_vol_notify_time = 0;
+
+#define NOTIFY_COOLDOWN_MS 200  // Minimum time between notifications
+#include <sys/time.h> 
+
+static void volumechange(const Arg *arg) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    unsigned int now = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    
+    // Only send notification if cooldown has passed
+    if (now - last_vol_notify_time > NOTIFY_COOLDOWN_MS) {
+		system(arg->v);
+        char cmd[256];
+        // Get current volume and create notification command
+        snprintf(cmd, sizeof(cmd), "amixer get Master | awk -F'[][%%]' '/%/ {print $2}' | head -n 1 | xargs -I {} dunstify -t 800 -u low -r 10000 'Volume' -h int:value:{}");
+        system(cmd);
+        last_vol_notify_time = now;
+    }
+}
+
+/* Volume control actions */
+#define VOL_TOGGLE 0
+#define VOL_DOWN   1
+#define VOL_UP     2
+
+static void volumecontrol(const Arg *arg) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    unsigned int now = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    
+    if (now - last_vol_notify_time > NOTIFY_COOLDOWN_MS) {
+        const char *action;
+        switch(arg->i) {  // Note: using .i for integer
+            case VOL_UP:
+                action = "[ \"$(amixer get Master | awk -F'[][]' '/Mono:/ {print $6}')\" = \"off\" ] && amixer set Master unmute; "
+                         "amixer set Master 5%+";
+                break;
+            case VOL_DOWN:
+                action = "amixer set Master 5%-";
+                break;
+            case VOL_TOGGLE:
+                action = "amixer set Master toggle";
+                break;
+            default:
+                return;
+        }
+
+        char cmd[512];
+        snprintf(cmd, sizeof(cmd),
+            "%s && "
+            "output=$(amixer get Master) && "
+            "muted=$(echo \"$output\" | awk -F'[][]' '/Mono:/ {print $6}') && "
+            "vol=$(echo \"$output\" | awk -F'[][]' '/%/ {print $2}' | head -n 1) && "
+            "if [ \"$muted\" = \"off\" ]; then "
+            "    dunstify -t 800 -u critical -r 10000 'Volume' -h int:value:0; "
+            "else "
+            "    dunstify -t 800 -u low -r 10000 'Volume' -h int:value:$vol; "
+            "fi",
+            action);
+        
+        system(cmd);
+        last_vol_notify_time = now;
+    }
+}
 
 #include "exitdwm.c"
 static const Key keys[] = {
@@ -95,9 +160,12 @@ static const Key keys[] = {
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
-	{ 0,				            XF86AudioMute,spawn,		{.v = cmdsoundtoggle} },
-	{ 0,				            XF86AudioRaiseVolume,spawn,	{.v = cmdsoundup} },
-	{ 0,				            XF86AudioLowerVolume,spawn,	{.v = cmdsounddown} },
+	{ 0,				            XF86AudioMute,volumecontrol,		{.i = VOL_TOGGLE} },
+	{ 0,				            XF86AudioRaiseVolume,volumecontrol,	{.i = VOL_UP} },
+	{ 0,				            XF86AudioLowerVolume,volumecontrol,	{.i = VOL_DOWN} },
+	// { 0,				            XF86AudioMute,spawn,		{.v = cmdsoundnotify} },
+	// { 0,				            XF86AudioRaiseVolume,spawn,	{.v = cmdsoundnotify} },
+	// { 0,				            XF86AudioLowerVolume,spawn,	{.v = cmdsoundnotify} },
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
