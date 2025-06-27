@@ -103,7 +103,7 @@ static void volumecontrol(const Arg *arg) {
         const char *action;
         switch(arg->i) {  // Note: using .i for integer
             case VOL_UP:
-                action = "[ \"$(amixer get Master | awk -F'[][]' '/Mono:/ {print $6}')\" = \"off\" ] && amixer set Master unmute; "
+                action = "[ \"$(amixer get Master | tail -1 | awk '{print $6}' | tr -d '[]')\" = \"off\" ] && amixer set Master unmute; "
                          "amixer set Master 5%+";
                 break;
             case VOL_DOWN:
@@ -120,7 +120,7 @@ static void volumecontrol(const Arg *arg) {
         snprintf(cmd, sizeof(cmd),
             "%s && "
             "output=$(amixer get Master) && "
-            "muted=$(echo \"$output\" | awk -F'[][]' '/Mono:/ {print $6}') && "
+            "muted=$(echo \"$output\" | tail -1 | awk '{print $6}' | tr -d '[]') &&"
             "vol=$(echo \"$output\" | awk -F'[][]' '/%/ {print $2}' | head -n 1) && "
             "if [ \"$muted\" = \"off\" ]; then "
             "    dunstify -t 800 -u critical -r 10000 'Volume' -h int:value:0; "
